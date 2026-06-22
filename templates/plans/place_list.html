@@ -33,11 +33,14 @@
                 {% endif %}
                 <p class="text-dark-secondary text-xs mt-2">{{ place.added_by.get_display_name }} 添加</p>
             </div>
-            <form method="post" action="{% url 'plans:place_visit' place.id %}" class="flex-shrink-0">
+            <form method="post" action="{% url 'plans:place_visit' place.id %}" class="flex-shrink-0 flex items-center gap-2">
                 {% csrf_token %}
                 <button type="submit" class="px-3 py-1.5 rounded-full text-xs font-bold {% if place.is_visited %}bg-dark-card text-dark-secondary border border-dark-border{% else %}bg-green-500 text-white{% endif %} transition">
                     {% if place.is_visited %}已去{% else %}打卡{% endif %}
                 </button>
+                {% if place.added_by == user or user.is_staff %}
+                <button onclick="confirmDelete('{% url "plans:place_delete" place.pk %}')" class="text-red-500 hover:text-red-700 text-sm">删除</button>
+                {% endif %}
             </form>
         </div>
         {% empty %}
@@ -48,4 +51,23 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(url) {
+    if (confirm('确定要删除吗？此操作不可撤销。')) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
 {% endblock %}

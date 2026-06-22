@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from .models import Place, Movie
@@ -84,4 +85,32 @@ def movie_update_status(request, pk):
                 movie.rating = int(rating)
             movie.review = request.POST.get('review', '')
         movie.save()
+    return redirect('plans:movie_list')
+
+
+@login_required
+@require_POST
+def place_delete(request, pk):
+    place = get_object_or_404(Place, pk=pk)
+    if place.added_by != request.user and not request.user.is_staff:
+        return JsonResponse({'error': 'permission denied'}, status=403)
+    place.delete()
+    if request.headers.get('HX-Request'):
+        response = HttpResponse()
+        response['HX-Trigger'] = 'placeDeleted'
+        return response
+    return redirect('plans:place_list')
+
+
+@login_required
+@require_POST
+def movie_delete(request, pk):
+    movie = get_object_or_404(Movie, pk=pk)
+    if movie.added_by != request.user and not request.user.is_staff:
+        return JsonResponse({'error': 'permission denied'}, status=403)
+    movie.delete()
+    if request.headers.get('HX-Request'):
+        response = HttpResponse()
+        response['HX-Trigger'] = 'movieDeleted'
+        return response
     return redirect('plans:movie_list')
