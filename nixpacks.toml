@@ -1,2 +1,2 @@
 [phases.build]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["pip install -r requirements.txt", "python manage.py collectstatic --noinput"]

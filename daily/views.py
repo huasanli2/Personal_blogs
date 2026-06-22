@@ -77,17 +77,16 @@ def journal_create(request):
 @login_required
 def whisper_list(request):
     now = timezone.now()
+    from django.db.models import Q
     whispers = Whisper.objects.filter(
-        visible_at__isnull=True
-    ) | Whisper.objects.filter(
-        visible_at__lte=now
-    )
-    whispers = whispers.select_related('author').order_by('-created_at')
+        Q(visible_at__isnull=True) | Q(visible_at__lte=now)
+    ).select_related('author').order_by('-created_at')
 
-    for whisper in whispers:
-        if not whisper.is_read and whisper.author != request.user:
-            whisper.is_read = True
-            whisper.save()
+    # Batch update: mark all unread whispers from other users as read in one query
+    Whisper.objects.filter(
+        Q(visible_at__isnull=True) | Q(visible_at__lte=now),
+        is_read=False
+    ).exclude(author=request.user).update(is_read=True)
 
     return render(request, 'daily/whisper_list.html', {'whispers': whispers})
 
