@@ -197,6 +197,10 @@
     const WS_MAX_DELAY = 30000;
     let wsReconnectTimer = null;
     let pendingMessages = [];
+    let heartbeatTimer = null;
+    let heartbeatTimeout = null;
+    const HEARTBEAT_INTERVAL = 30000;
+    const HEARTBEAT_TIMEOUT = 5000;
 
     const wsStatus = document.getElementById('ws-status');
     const wsStatusText = document.getElementById('ws-status-text');
@@ -233,6 +237,30 @@
         }
     }
 
+    function startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = setInterval(() => {
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({ type: 'ping' }));
+                heartbeatTimeout = setTimeout(() => {
+                    console.log('Heartbeat timeout, closing connection...');
+                    chatSocket.close();
+                }, HEARTBEAT_TIMEOUT);
+            }
+        }, HEARTBEAT_INTERVAL);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatTimer) {
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = null;
+        }
+        if (heartbeatTimeout) {
+            clearTimeout(heartbeatTimeout);
+            heartbeatTimeout = null;
+        }
+    }
+
     function connectWebSocket() {
         updateWsStatus('connecting');
         chatSocket = new WebSocket(wsUrl);
@@ -240,6 +268,7 @@
         chatSocket.onopen = function() {
             wsReconnectDelay = 1000;
             updateWsStatus('connected');
+            startHeartbeat();
             while (pendingMessages.length > 0) {
                 const msg = pendingMessages.shift();
                 chatSocket.send(msg);
@@ -247,15 +276,25 @@
         };
 
         chatSocket.onmessage = function(e) {
-            appendMessage(JSON.parse(e.data));
+            const data = JSON.parse(e.data);
+            if (data.type === 'pong') {
+                if (heartbeatTimeout) {
+                    clearTimeout(heartbeatTimeout);
+                    heartbeatTimeout = null;
+                }
+                return;
+            }
+            appendMessage(data);
         };
 
         chatSocket.onclose = function() {
+            stopHeartbeat();
             updateWsStatus('disconnected');
             scheduleReconnect();
         };
 
         chatSocket.onerror = function() {
+            stopHeartbeat();
             updateWsStatus('disconnected');
         };
     }
