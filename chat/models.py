@@ -14,7 +14,7 @@ class Message(models.Model):
     content = models.TextField('内容', blank=True)
     message_type = models.CharField('消息类型', max_length=10, choices=MESSAGE_TYPES, default='text')
     image = models.ImageField('图片', upload_to='chat/', blank=True)
-    is_read = models.BooleanField('已读', default=False, db_index=True)
+    is_read = models.BooleanField('已读', default=False)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
 
     class Meta:

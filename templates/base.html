@@ -42,12 +42,7 @@
             <a href="{% url 'moments:home' %}" class="text-xl font-bold text-white tracking-tight">OurNest</a>
             <div class="flex items-center gap-1">
                 <a href="{% url 'moments:home' %}" class="px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">首页</a>
-                <a href="{% url 'chat:room' %}" class="relative px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">
-                    消息
-                    <span id="unread-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
-                        <span id="unread-count">0</span>
-                    </span>
-                </a>
+                <a href="{% url 'chat:room' %}" class="px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">消息</a>
                 <a href="{% url 'daily:food_list' %}" class="px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">日常</a>
                 <a href="{% url 'plans:movie_list' %}" class="px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">计划</a>
                 <a href="{% url 'storage:list' %}" class="px-3 py-2 rounded-full hover:bg-dark-hover transition text-sm font-medium">存档</a>
@@ -80,39 +75,6 @@
         </div>
         {% block rightbar %}{% endblock %}
     </main>
-
-    <script>
-        (function() {
-            const badge = document.getElementById('unread-badge');
-            const countEl = document.getElementById('unread-count');
-            let unreadCount = 0;
-
-            function updateBadge(count) {
-                unreadCount = count;
-                if (count > 0) {
-                    countEl.textContent = count > 99 ? '99+' : count;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-
-            async function fetchUnreadCount() {
-                try {
-                    const resp = await fetch('{% url "chat:unread_count" %}');
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        updateBadge(data.count);
-                    }
-                } catch (e) {}
-            }
-
-            fetchUnreadCount();
-            setInterval(fetchUnreadCount, 30000);
-
-            window.ChatUnread = { updateBadge: updateBadge };
-        })();
-    </script>
 
     {% block extra_js %}{% endblock %}
 

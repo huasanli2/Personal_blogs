@@ -1,4 +1,3 @@
-import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -101,25 +100,6 @@ def load_messages(request):
     } for m in reversed(list(messages))]
 
     return JsonResponse({'messages': data, 'has_more': len(messages) == 50})
-
-
-@login_required
-def unread_count(request):
-    count = Message.objects.filter(is_read=False).exclude(sender=request.user).count()
-    return JsonResponse({'count': count})
-
-
-@login_required
-@require_POST
-def mark_read(request):
-    try:
-        ids = json.loads(request.body).get('ids', [])
-    except (json.JSONDecodeError, AttributeError):
-        return JsonResponse({'error': 'invalid json'}, status=400)
-    if not ids:
-        return JsonResponse({'ok': True})
-    Message.objects.filter(id__in=ids, is_read=False).exclude(sender=request.user).update(is_read=True)
-    return JsonResponse({'ok': True})
 
 
 def broadcast_message(message):

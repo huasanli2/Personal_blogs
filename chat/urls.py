@@ -8,6 +8,4 @@ urlpatterns = [
     path('send/', views.send_message, name='send'),
     path('upload/', views.upload_image, name='upload'),
     path('load/', views.load_messages, name='load'),
-    path('unread-count/', views.unread_count, name='unread_count'),
-    path('mark-read/', views.mark_read, name='mark_read'),
 ]
