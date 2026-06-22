@@ -24,6 +24,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         msg_type = data.get('type', 'text')
         content = data.get('content', '')
 
+        if msg_type == 'mark_read':
+            ids = data.get('ids', [])
+            if ids:
+                await self.mark_messages_read(ids)
+            return
+
         if msg_type == 'text' and not content.strip():
             return
 
@@ -43,6 +49,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
+
+    @database_sync_to_async
+    def mark_messages_read(self, ids):
+        Message.objects.filter(id__in=ids, is_read=False).exclude(sender=self.user).update(is_read=True)
 
     @database_sync_to_async
     def save_message(self, msg_type, content):
