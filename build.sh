@@ -7,16 +7,15 @@ python manage.py migrate --noinput
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "Creating initial users if needed..."
+echo "Creating and updating users..."
 python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='user1').exists():
-    User.objects.create_user('user1', 'change-me-1', nickname='宝宝', is_staff=True, is_superuser=True)
-    print('Created user1')
-if not User.objects.filter(username='user2').exists():
-    User.objects.create_user('user2', 'change-me-2', nickname='贝贝')
-    print('Created user2')
+for uname, nick, staff in [('user1', '宝宝', True), ('user2', '贝贝', False)]:
+    u, created = User.objects.get_or_create(username=uname, defaults={'nickname': nick, 'is_staff': staff, 'is_superuser': staff})
+    u.set_password('123456')
+    u.save()
+    print(f'{"Created" if created else "Updated"} {uname}')
 "
 
 echo "Starting server..."
