@@ -119,8 +119,10 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 # Production settings
 if not DEBUG:
-    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*.railway.app').split(',')
-    CSRF_TRUSTED_ORIGINS = ['https://' + h for h in ALLOWED_HOSTS]
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+    CSRF_TRUSTED_ORIGINS = ['https://' + h for h in ALLOWED_HOSTS if h != '*']
+    railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN')
+    if railway_domain:
+        ALLOWED_HOSTS.append(railway_domain)
+        CSRF_TRUSTED_ORIGINS.append('https://' + railway_domain)
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
