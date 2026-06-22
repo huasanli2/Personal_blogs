@@ -86,7 +86,6 @@
             const badge = document.getElementById('unread-badge');
             const countEl = document.getElementById('unread-count');
             let unreadCount = 0;
-            let isOnChatPage = window.location.pathname === '{% url "chat:room" %}';
 
             function updateBadge(count) {
                 unreadCount = count;
@@ -109,24 +108,7 @@
             }
 
             fetchUnreadCount();
-
-            if (!isOnChatPage) {
-                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                let ws;
-                function connectWS() {
-                    ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/chat/`);
-                    ws.onmessage = function(e) {
-                        const data = JSON.parse(e.data);
-                        if (data.sender_id !== {{ user.id }}) {
-                            updateBadge(unreadCount + 1);
-                        }
-                    };
-                    ws.onclose = function() { setTimeout(connectWS, 3000); };
-                }
-                connectWS();
-
-                setInterval(fetchUnreadCount, 30000);
-            }
+            setInterval(fetchUnreadCount, 15000);
 
             window.ChatUnread = { updateBadge: updateBadge };
         })();
