@@ -1,5 +1,2 @@
 [phases.build]
 cmds = ["pip install -r requirements.txt"]
-
-[phases.run]
-cmds = ["bash build.sh"]
