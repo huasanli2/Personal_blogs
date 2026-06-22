@@ -1,6 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from asgiref.sync import async_to_sync
 from .models import Message
 
 
@@ -24,6 +25,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         msg_type = data.get('type', 'text')
         content = data.get('content', '')
 
+        if msg_type == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+            return
+
+        if msg_type == 'recall':
+            message_id = data.get('message_id')
+            if message_id:
+                await self.recall_message(message_id)
+            return
+
         if msg_type == 'text' and not content.strip():
             return
 
@@ -43,6 +54,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
+
+    @database_sync_to_async
+    def recall_message(self, message_id):
+        try:
+            message = Message.objects.get(id=message_id, sender=self.user)
+            message.is_recalled = True
+            message.save()
+
+            async_to_sync(self.channel_layer.group_send)(self.room_name, {
+                'type': 'chat_message',
+                'message': {
+                    'type': 'message_recalled',
+                    'message_id': message_id,
+                    'sender_id': self.user.id,
+                }
+            })
+            return True
+        except Message.DoesNotExist:
+            return False
 
     @database_sync_to_async
     def save_message(self, msg_type, content):
