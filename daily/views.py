@@ -103,3 +103,45 @@ def whisper_create(request):
         return redirect('daily:whisper_list')
 
     return render(request, 'daily/whisper_create.html')
+
+
+@login_required
+@require_POST
+def food_delete(request, pk):
+    food = get_object_or_404(FoodLog, pk=pk)
+    if food.author != request.user and not request.user.is_staff:
+        return JsonResponse({'error': 'permission denied'}, status=403)
+    food.delete()
+    if request.headers.get('HX-Request'):
+        response = HttpResponse()
+        response['HX-Trigger'] = 'foodDeleted'
+        return response
+    return redirect('daily:food_list')
+
+
+@login_required
+@require_POST
+def journal_delete(request, pk):
+    log = get_object_or_404(DailyLog, pk=pk)
+    if log.author != request.user and not request.user.is_staff:
+        return JsonResponse({'error': 'permission denied'}, status=403)
+    log.delete()
+    if request.headers.get('HX-Request'):
+        response = HttpResponse()
+        response['HX-Trigger'] = 'journalDeleted'
+        return response
+    return redirect('daily:journal_list')
+
+
+@login_required
+@require_POST
+def whisper_delete(request, pk):
+    whisper = get_object_or_404(Whisper, pk=pk)
+    if whisper.author != request.user and not request.user.is_staff:
+        return JsonResponse({'error': 'permission denied'}, status=403)
+    whisper.delete()
+    if request.headers.get('HX-Request'):
+        response = HttpResponse()
+        response['HX-Trigger'] = 'whisperDeleted'
+        return response
+    return redirect('daily:whisper_list')

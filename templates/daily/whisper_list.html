@@ -18,7 +18,15 @@
             {% endif %}
             <div class="flex items-center justify-between text-xs text-dark-secondary">
                 <span>{% if whisper.is_anonymous %}匿名{% else %}{{ whisper.author.get_display_name }}{% endif %}</span>
-                <span>{{ whisper.created_at|timesince }}前</span>
+                <div class="flex items-center gap-2">
+                    {% if whisper.author == user or user.is_staff %}
+                    <button onclick="confirmDelete('{% url "daily:whisper_delete" whisper.pk %}')"
+                            class="text-red-500 hover:text-red-700 text-xs">
+                        删除
+                    </button>
+                    {% endif %}
+                    <span>{{ whisper.created_at|timesince }}前</span>
+                </div>
             </div>
         </div>
         {% empty %}
