@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}悄悄话 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3 flex items-center justify-between">
+        <h2 class="text-lg font-bold">悄悄话</h2>
+        <a href="{% url 'daily:whisper_create' %}" class="bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-600 transition">写一条</a>
+    </div>
+
+    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% for whisper in whispers %}
+        <div class="bg-dark-card rounded-2xl p-5 border border-dark-border">
+            <p class="text-[15px] whitespace-pre-wrap mb-4 leading-relaxed">{{ whisper.content }}</p>
+            {% if whisper.image %}
+            <img src="{{ whisper.image.url }}" class="rounded-xl mb-4 max-w-full cursor-pointer lightbox-trigger">
+            {% endif %}
+            <div class="flex items-center justify-between text-xs text-dark-secondary">
+                <span>{% if whisper.is_anonymous %}匿名{% else %}{{ whisper.author.get_display_name }}{% endif %}</span>
+                <span>{{ whisper.created_at|timesince }}前</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-2 p-12 text-center text-dark-secondary">
+            <p class="text-4xl mb-3">💌</p>
+            <p>还没有悄悄话</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% include 'partials/_lightbox.html' %}
+{% endblock %}

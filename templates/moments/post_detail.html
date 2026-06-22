@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}详情 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3 flex items-center gap-4">
+        <a href="{% url 'moments:home' %}" class="text-dark-secondary hover:text-white transition">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <h2 class="text-lg font-bold">帖子</h2>
+    </div>
+
+    <article class="p-4 border-b border-dark-border">
+        <div class="flex gap-3 mb-3">
+            {% if post.author.avatar %}
+            <img src="{{ post.author.avatar.url }}" class="w-10 h-10 rounded-full object-cover">
+            {% else %}
+            <div class="w-10 h-10 rounded-full bg-dark-card flex items-center justify-center">{{ post.author.get_display_name|first }}</div>
+            {% endif %}
+            <div>
+                <p class="font-bold text-sm">{{ post.author.get_display_name }}</p>
+                <p class="text-dark-secondary text-sm">@{{ post.author.username }}</p>
+            </div>
+            {% if post.mood %}
+            <span class="ml-auto text-sm">{{ post.get_mood_display }}</span>
+            {% endif %}
+            {% if post.author == user %}
+            <form method="post" action="{% url 'moments:post_delete' post.id %}" class="ml-auto"
+                  onsubmit="return confirm('确定删除？')">
+                {% csrf_token %}
+                <button type="submit" class="text-dark-secondary hover:text-red-500 transition p-1">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <p class="text-[17px] leading-relaxed whitespace-pre-wrap mb-4">{{ post.content }}</p>
+
+        {% if post.images.all %}
+        <div class="rounded-2xl overflow-hidden border border-dark-border mb-4 grid {% if post.images.count == 1 %}grid-cols-1{% elif post.images.count == 2 %}grid-cols-2{% else %}grid-cols-2{% endif %} gap-0.5">
+            {% for img in post.images.all %}
+            <img src="{{ img.image.url }}" class="w-full object-cover {% if post.images.count == 1 %}max-h-[500px]{% else %}max-h-80{% endif %} cursor-pointer lightbox-trigger">
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if post.location %}
+        <p class="text-dark-secondary text-sm mb-4">📍 {{ post.location }}</p>
+        {% endif %}
+
+        <p class="text-dark-secondary text-sm pb-4 border-b border-dark-border">{{ post.created_at|date:'H:i' }} · {{ post.created_at|date:'Y年m月d日' }}</p>
+
+        <div class="flex items-center gap-8 py-3">
+            <span id="like-area-detail-{{ post.id }}">
+                <button hx-post="{% url 'moments:toggle_like' post.id %}"
+                        hx-target="#like-area-detail-{{ post.id }}"
+                        hx-swap="outerHTML"
+                        class="flex items-center gap-1.5 text-dark-secondary hover:text-pink-500 transition">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="{% if user in post.likes.all %}#ec4899{% else %}none{% endif %}" stroke="{% if user in post.likes.all %}#ec4899{% else %}currentColor{% endif %}" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <span class="text-sm">{{ post.likes.count }}</span>
+                </button>
+            </span>
+            <span class="flex items-center gap-1.5 text-dark-secondary">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span id="comment-count" class="text-sm">{{ post.comments.count }}</span>
+            </span>
+        </div>
+    </article>
+
+    <div id="comments-list" class="divide-y divide-dark-border">
+        {% for comment in post.comments.all %}
+        <div class="flex gap-3 p-4">
+            {% if comment.author.avatar %}
+            <img src="{{ comment.author.avatar.url }}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-8 h-8 rounded-full bg-dark-card flex items-center justify-center text-xs flex-shrink-0">{{ comment.author.get_display_name|first }}</div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-0.5">
+                    <span class="font-bold text-sm">{{ comment.author.get_display_name }}</span>
+                    <span class="text-dark-secondary text-xs">{{ comment.created_at|timesince }}</span>
+                </div>
+                <p class="text-[15px]">{{ comment.content }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-8 text-center text-dark-secondary text-sm">还没有评论</div>
+        {% endfor %}
+    </div>
+
+    <div class="sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-dark-border p-4">
+        <form hx-post="{% url 'moments:add_comment' post.id %}"
+              hx-target="#comments-list"
+              hx-swap="innerHTML"
+              class="flex gap-3"
+              _="on htmx:afterRequest reset() me">
+            {% csrf_token %}
+            {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-8 h-8 rounded-full bg-dark-card flex items-center justify-center text-xs flex-shrink-0">{{ user.get_display_name|first }}</div>
+            {% endif %}
+            <input type="text" name="content" required placeholder="回复..."
+                   class="flex-1 bg-transparent outline-none placeholder:text-dark-secondary text-sm">
+            <button type="submit" class="bg-blue-500 text-white px-4 py-1.5 rounded-full font-bold text-sm hover:bg-blue-600 transition">回复</button>
+        </form>
+    </div>
+</div>
+
+{% include 'partials/_lightbox.html' %}
+{% endblock %}

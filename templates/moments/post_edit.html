@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3 flex items-center gap-4">
+        <a href="{% url 'moments:post_detail' post.id %}" class="text-dark-secondary hover:text-white transition">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <h2 class="text-lg font-bold">编辑帖子</h2>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="p-4">
+        {% csrf_token %}
+        <div class="flex gap-3">
+            <div class="flex-shrink-0">
+                {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" class="w-10 h-10 rounded-full object-cover">
+                {% else %}
+                <div class="w-10 h-10 rounded-full bg-dark-card flex items-center justify-center">{{ user.get_display_name|first }}</div>
+                {% endif %}
+            </div>
+            <div class="flex-1">
+                <textarea name="content" rows="4" required
+                          class="w-full bg-transparent text-lg outline-none resize-none placeholder:text-dark-secondary mb-4">{{ post.content }}</textarea>
+
+                {% if post.images.all %}
+                <div class="flex flex-wrap gap-2 mb-4" id="existing-images">
+                    {% for img in post.images.all %}
+                    <div class="relative group" id="img-{{ img.id }}">
+                        <img src="{{ img.image.url }}" class="w-20 h-20 rounded-lg object-cover">
+                        <button type="button" hx-delete="{% url 'moments:delete_image' img.id %}"
+                                hx-target="#img-{{ img.id }}" hx-swap="outerHTML"
+                                class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            ×
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="flex flex-wrap gap-2 mb-4">
+                    {% for value, label in post.MOOD_CHOICES %}
+                    <label class="cursor-pointer">
+                        <input type="radio" name="mood" value="{{ value }}" class="hidden peer" {% if post.mood == value %}checked{% endif %}>
+                        <span class="px-3 py-1.5 rounded-full border border-dark-border text-sm peer-checked:bg-dark-card peer-checked:border-blue-500 transition">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                    <label class="cursor-pointer">
+                        <input type="radio" name="mood" value="" class="hidden peer" {% if not post.mood %}checked{% endif %}>
+                        <span class="px-3 py-1.5 rounded-full border border-dark-border text-sm peer-checked:bg-dark-card peer-checked:border-blue-500 transition">无</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-dark-border">
+                    <div class="flex items-center gap-2">
+                        <label class="cursor-pointer p-2 rounded-full hover:bg-blue-500/10 text-blue-500 transition">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            <input type="file" name="images" multiple accept="image/*" class="hidden">
+                        </label>
+                        <input type="text" name="location" value="{{ post.location }}" placeholder="位置" class="bg-transparent text-sm outline-none text-dark-secondary placeholder:text-dark-secondary w-32">
+                    </div>
+                    <button type="submit" class="bg-blue-500 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-blue-600 transition">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

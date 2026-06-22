@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3">
+        <h2 class="text-lg font-bold">首页</h2>
+    </div>
+
+    <div class="border-b border-dark-border p-4">
+        <a href="{% url 'moments:post_create' %}" class="flex items-center gap-3 group">
+            {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" class="w-10 h-10 rounded-full object-cover">
+            {% else %}
+            <div class="w-10 h-10 rounded-full bg-dark-card flex items-center justify-center">{{ user.get_display_name|first }}</div>
+            {% endif %}
+            <span class="text-dark-secondary group-hover:text-dark-text transition">分享点什么...</span>
+        </a>
+    </div>
+
+    <div id="posts-container">
+        {% for post in posts %}
+        {% include 'moments/partials/post_card.html' %}
+        {% empty %}
+        <div class="p-12 text-center text-dark-secondary">
+            <p class="text-5xl mb-4">✦</p>
+            <p class="text-lg">还没有动态</p>
+            <p class="text-sm mt-1">发布第一条内容吧</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="load-more" class="p-8 text-center"
+         hx-get="{% url 'moments:home' %}?page=2"
+         hx-trigger="revealed"
+         hx-swap="afterend"
+         hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
+    </div>
+</div>
+
+{% include 'partials/_lightbox.html' %}
+
+<script>
+    let currentPage = 2;
+    const loadMore = document.getElementById('load-more');
+
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target === loadMore) {
+            currentPage++;
+            if (loadMore.children.length > 0) {
+                loadMore.setAttribute('hx-get', `{% url 'moments:home' %}?page=${currentPage}`);
+                htmx.process(loadMore);
+            } else {
+                loadMore.remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}想去的地方 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3 flex items-center justify-between">
+        <h2 class="text-lg font-bold">一起去的地方</h2>
+        <a href="{% url 'plans:place_create' %}" class="bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-600 transition">添加</a>
+    </div>
+
+    <div>
+        {% for place in places %}
+        <div class="border-b border-dark-border p-4 flex gap-3">
+            {% if place.image %}
+            <img src="{{ place.image.url }}" class="w-20 h-20 rounded-xl object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-20 h-20 rounded-xl bg-dark-card flex items-center justify-center text-3xl flex-shrink-0">📍</div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold">{{ place.name }}</span>
+                    {% if place.is_visited %}
+                    <span class="px-2 py-0.5 bg-green-900/50 text-green-400 rounded-full text-xs border border-green-800">已打卡</span>
+                    {% endif %}
+                </div>
+                {% if place.location %}
+                <p class="text-dark-secondary text-sm">{{ place.location }}</p>
+                {% endif %}
+                <p class="text-yellow-500 text-sm mt-1">{{ place.get_rating_display }}</p>
+                {% if place.description %}
+                <p class="text-dark-secondary text-sm mt-1 line-clamp-2">{{ place.description }}</p>
+                {% endif %}
+                <p class="text-dark-secondary text-xs mt-2">{{ place.added_by.get_display_name }} 添加</p>
+            </div>
+            <form method="post" action="{% url 'plans:place_visit' place.id %}" class="flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 rounded-full text-xs font-bold {% if place.is_visited %}bg-dark-card text-dark-secondary border border-dark-border{% else %}bg-green-500 text-white{% endif %} transition">
+                    {% if place.is_visited %}已去{% else %}打卡{% endif %}
+                </button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="p-12 text-center text-dark-secondary">
+            <p class="text-4xl mb-3">🗺️</p>
+            <p>还没有想去的地方</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

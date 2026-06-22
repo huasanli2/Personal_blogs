@@ -1,0 +1,58 @@
+{% load post_filters %}
+<article class="border-b border-dark-border hover:bg-dark-hover/50 transition" id="post-{{ post.id }}">
+    <div class="p-4 flex gap-3 cursor-pointer" onclick="window.location='{% url 'moments:post_detail' post.id %}'">
+        <div class="flex-shrink-0">
+            {% if post.author.avatar %}
+            <img src="{{ post.author.avatar.url }}" class="w-10 h-10 rounded-full object-cover">
+            {% else %}
+            <div class="w-10 h-10 rounded-full bg-dark-card flex items-center justify-center text-sm">{{ post.author.get_display_name|first }}</div>
+            {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="font-bold text-sm hover:underline">{{ post.author.get_display_name }}</span>
+                <span class="text-dark-secondary text-sm">@{{ post.author.username }}</span>
+                <span class="text-dark-secondary text-sm">·</span>
+                <span class="text-dark-secondary text-sm">{{ post.created_at|timesince }}</span>
+                {% if post.mood %}
+                <span class="text-sm">{{ post.get_mood_display }}</span>
+                {% endif %}
+            </div>
+
+            <p class="text-[15px] leading-relaxed whitespace-pre-wrap mb-3">{{ post.content }}</p>
+
+            {% if post.images.all %}
+            <div class="rounded-2xl overflow-hidden border border-dark-border mb-3 grid {% if post.images.count == 1 %}grid-cols-1{% elif post.images.count == 2 %}grid-cols-2{% else %}grid-cols-2{% endif %} gap-0.5">
+                {% for img in post.images.all %}
+                <img src="{{ img.image.url }}" class="w-full object-cover {% if post.images.count == 1 %}max-h-96{% else %}max-h-64{% endif %} lightbox-trigger">
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if post.location %}
+            <p class="text-dark-secondary text-sm mb-3">📍 {{ post.location }}</p>
+            {% endif %}
+
+            <div class="flex items-center gap-12 -ml-2" onclick="event.stopPropagation()">
+                <span id="like-area-{{ post.id }}">
+                    <button hx-post="{% url 'moments:toggle_like' post.id %}"
+                            hx-target="#like-area-{{ post.id }}"
+                            hx-swap="outerHTML"
+                            class="flex items-center gap-1.5 text-dark-secondary hover:text-pink-500 transition">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="{% if post|has_liked:user %}#ec4899{% else %}none{% endif %}" stroke="{% if post|has_liked:user %}#ec4899{% else %}currentColor{% endif %}" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <span class="text-sm">{{ post.likes.count }}</span>
+                    </button>
+                </span>
+                <a href="{% url 'moments:post_detail' post.id %}"
+                   class="flex items-center gap-1.5 text-dark-secondary hover:text-blue-500 transition group">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span class="text-sm">{{ post.comments.count }}</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</article>

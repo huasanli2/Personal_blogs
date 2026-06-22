@@ -1,0 +1,22 @@
+<div class="border-b border-dark-border p-4 flex gap-3 hover:bg-dark-hover/50 transition">
+    {% if food.image %}
+    <img src="{{ food.image.url }}" class="w-16 h-16 rounded-xl object-cover flex-shrink-0">
+    {% else %}
+    <div class="w-16 h-16 rounded-xl bg-dark-card flex items-center justify-center text-2xl flex-shrink-0">
+        {% if food.meal_type == 'breakfast' %}🌅{% elif food.meal_type == 'lunch' %}☀️{% elif food.meal_type == 'dinner' %}🌙{% else %}🍰{% endif %}
+    </div>
+    {% endif %}
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-0.5">
+            <span class="font-bold text-sm">{{ food.title }}</span>
+            <span class="text-dark-secondary text-xs">{{ food.get_meal_type_display }}</span>
+        </div>
+        {% if food.description %}
+        <p class="text-dark-secondary text-sm line-clamp-2">{{ food.description }}</p>
+        {% endif %}
+        {% if food.location %}
+        <p class="text-dark-secondary text-xs mt-1">📍 {{ food.location }}</p>
+        {% endif %}
+    </div>
+    <span class="text-dark-secondary text-xs flex-shrink-0">{{ food.author.get_display_name }}</span>
+</div>

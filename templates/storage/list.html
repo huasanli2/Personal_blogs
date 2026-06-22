@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}存档 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3">
+        <h2 class="text-lg font-bold">存档</h2>
+    </div>
+
+    <div class="p-4 border-b border-dark-border">
+        <form method="get" class="flex gap-2">
+            <input type="text" name="q" value="{{ query }}" placeholder="搜索..."
+                   class="flex-1 bg-dark-card px-4 py-2.5 rounded-full border border-dark-border text-sm outline-none focus:border-blue-500 transition placeholder:text-dark-secondary">
+            <select name="mood" class="bg-dark-card px-3 py-2.5 rounded-full border border-dark-border text-sm outline-none focus:border-blue-500">
+                <option value="">心情</option>
+                {% for value, label in moods %}
+                <option value="{{ value }}" {% if mood_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="bg-dark-card px-4 py-2.5 rounded-full border border-dark-border text-sm hover:bg-dark-hover transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </button>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-0.5 p-0.5">
+        {% for post in posts %}
+        <a href="{% url 'moments:post_detail' post.id %}" class="relative group aspect-square bg-dark-card overflow-hidden">
+            {% if post.images.first %}
+            <img src="{{ post.images.first.image.url }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-dark-card to-dark-hover p-4">
+                <p class="text-sm text-dark-secondary line-clamp-3 text-center">{{ post.content }}</p>
+            </div>
+            {% endif %}
+            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-end">
+                <div class="p-3 opacity-0 group-hover:opacity-100 transition">
+                    <p class="text-white text-sm font-bold">{{ post.author.get_display_name }}</p>
+                    <p class="text-white/70 text-xs">{{ post.created_at|date:'Y-m-d' }}</p>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-3 p-12 text-center text-dark-secondary">
+            <p class="text-4xl mb-3">📦</p>
+            <p>还没有内容</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

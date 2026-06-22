@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}消息 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen flex flex-col" style="height: calc(100vh - 56px);">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3">
+        <h2 class="text-lg font-bold">消息</h2>
+    </div>
+
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+        {% for msg in chat_messages %}
+        <div class="flex {% if msg.sender == user %}justify-end{% else %}justify-start{% endif %}">
+            <div class="max-w-[75%] flex gap-2 {% if msg.sender == user %}flex-row-reverse{% endif %}">
+                {% if msg.sender != user %}
+                {% if msg.sender.avatar %}
+                <img src="{{ msg.sender.avatar.url }}" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-1">
+                {% else %}
+                <div class="w-7 h-7 rounded-full bg-dark-card flex items-center justify-center text-xs flex-shrink-0 mt-1">{{ msg.sender.get_display_name|first }}</div>
+                {% endif %}
+                {% endif %}
+                <div>
+                    {% if msg.message_type == 'text' %}
+                    <div class="px-4 py-2.5 rounded-2xl text-[15px] {% if msg.sender == user %}bg-blue-500 text-white{% else %}bg-dark-border text-dark-text{% endif %}">
+                        {{ msg.content }}
+                    </div>
+                    {% elif msg.message_type == 'image' %}
+                    <img src="{{ msg.image.url }}" class="rounded-2xl max-w-[280px] border border-dark-border cursor-pointer lightbox-trigger">
+                    {% elif msg.message_type == 'emoji' %}
+                    <div class="text-4xl">{{ msg.content }}</div>
+                    {% endif %}
+                    <p class="text-[11px] text-dark-secondary mt-1 {% if msg.sender == user %}text-right{% endif %}">{{ msg.created_at|time:"H:i" }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="image-preview" style="display:none" class="border-t border-dark-border bg-dark-card p-3 items-center gap-3">
+        <div class="relative">
+            <img id="preview-img" src="" class="max-h-24 rounded-lg border border-dark-border">
+            <button id="cancel-image" type="button" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600">×</button>
+        </div>
+        <span class="text-sm text-dark-secondary">图片已选择</span>
+    </div>
+
+    <div id="emoji-panel" style="display:none" class="border-t border-dark-border bg-dark-card p-3">
+        <div class="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+            {% for emoji in emoji_list %}
+            <button class="text-2xl hover:bg-dark-hover rounded p-1 transition emoji-btn">{{ emoji }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="border-t border-dark-border p-3 bg-black">
+        <div class="flex gap-2 items-center">
+            {% csrf_token %}
+            <button id="emoji-toggle" type="button" class="p-2 text-dark-secondary hover:text-yellow-400 transition">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </button>
+            <label class="cursor-pointer p-2 text-dark-secondary hover:text-blue-500 transition">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                <input type="file" id="image-input" accept="image/*" class="hidden" data-no-preview>
+            </label>
+            <input type="text" id="chat-input" required placeholder="输入消息..."
+                   class="flex-1 bg-dark-card px-4 py-2.5 rounded-full outline-none text-sm border border-dark-border focus:border-blue-500 transition placeholder:text-dark-secondary">
+            <button id="send-btn" type="button" class="bg-blue-500 text-white p-2.5 rounded-full hover:bg-blue-600 transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% include 'partials/_lightbox.html' %}
+
+<script>
+    const currentUserId = {{ user.id }};
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const imageInput = document.getElementById('image-input');
+    const emojiToggle = document.getElementById('emoji-toggle');
+    const emojiPanel = document.getElementById('emoji-panel');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const cancelImageBtn = document.getElementById('cancel-image');
+    let pendingFile = null;
+
+    function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
+    scrollToBottom();
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function appendMessage(data) {
+        const isSelf = data.sender_id === currentUserId;
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex ${isSelf ? 'justify-end' : 'justify-start'}`;
+        const bubbleClass = isSelf ? 'bg-blue-500 text-white' : 'bg-dark-border text-dark-text';
+        const timeClass = isSelf ? 'text-right' : '';
+
+        let contentHtml = '';
+        if (data.type === 'text') {
+            contentHtml = `<div class="px-4 py-2.5 rounded-2xl text-[15px] ${bubbleClass}">${escapeHtml(data.content)}</div>`;
+        } else if (data.type === 'image') {
+            contentHtml = `<img src="${data.image_url}" class="rounded-2xl max-w-[280px] border border-dark-border cursor-pointer lightbox-trigger">`;
+        } else if (data.type === 'emoji') {
+            contentHtml = `<div class="text-4xl">${escapeHtml(data.content)}</div>`;
+        }
+
+        wrapper.innerHTML = `
+            <div class="max-w-[75%] flex gap-2 ${isSelf ? 'flex-row-reverse' : ''}">
+                <div>
+                    ${contentHtml}
+                    <p class="text-[11px] text-dark-secondary mt-1 ${timeClass}">${data.time}</p>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(wrapper);
+        scrollToBottom();
+    }
+
+    function showPreview(file) {
+        pendingFile = file;
+        previewImg.src = URL.createObjectURL(file);
+        imagePreview.style.display = 'flex';
+    }
+
+    function hidePreview() {
+        pendingFile = null;
+        imageInput.value = '';
+        imagePreview.style.display = 'none';
+        previewImg.src = '';
+    }
+
+    // WebSocket
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const chatSocket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/chat/`);
+    chatSocket.onmessage = function(e) { appendMessage(JSON.parse(e.data)); };
+    chatSocket.onclose = function() { console.error('WebSocket closed'); };
+
+    function sendMessage() {
+        const content = chatInput.value.trim();
+        if (!content) return;
+        chatSocket.send(JSON.stringify({ type: 'text', content: content }));
+        chatInput.value = '';
+        chatInput.focus();
+    }
+
+    async function sendImage() {
+        if (!pendingFile) return;
+        const formData = new FormData();
+        formData.append('image', pendingFile);
+        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        try {
+            const resp = await fetch('{% url "chat:upload" %}', { method: 'POST', body: formData });
+            if (resp.ok) hidePreview();
+        } catch (err) { console.error('Upload failed:', err); }
+    }
+
+    function sendEmoji(emoji) {
+        chatSocket.send(JSON.stringify({ type: 'emoji', content: emoji }));
+        emojiPanel.style.display = 'none';
+    }
+
+    // Send button handles both text and image
+    sendBtn.addEventListener('click', function() {
+        if (pendingFile) { sendImage(); }
+        else { sendMessage(); }
+    });
+
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    // Emoji
+    emojiToggle.addEventListener('click', function() {
+        emojiPanel.style.display = emojiPanel.style.display === 'none' ? 'block' : 'none';
+    });
+    document.querySelectorAll('.emoji-btn').forEach(btn => {
+        btn.addEventListener('click', function() { sendEmoji(this.textContent); });
+    });
+
+    // Image select
+    imageInput.addEventListener('change', function() {
+        if (this.files[0]) showPreview(this.files[0]);
+    });
+
+    cancelImageBtn.addEventListener('click', hidePreview);
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        return parts.length === 2 ? parts.pop().split(';').shift() : '';
+    }
+</script>
+{% endblock %}

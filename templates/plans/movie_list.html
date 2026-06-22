@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}观影清单 - OurNest{% endblock %}
+
+{% block content %}
+<div class="border-x border-dark-border min-h-screen">
+    <div class="sticky top-14 z-40 bg-black/80 backdrop-blur-md border-b border-dark-border px-4 py-3 flex items-center justify-between">
+        <h2 class="text-lg font-bold">想看的剧和电影</h2>
+        <a href="{% url 'plans:movie_create' %}" class="bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-600 transition">添加</a>
+    </div>
+
+    <div class="flex gap-1 px-4 py-3 border-b border-dark-border overflow-x-auto">
+        <a href="{% url 'plans:movie_list' %}" class="px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap {% if not status_filter %}bg-white text-black{% else %}bg-dark-card text-dark-secondary border border-dark-border hover:bg-dark-hover{% endif %} transition">全部</a>
+        <a href="{% url 'plans:movie_list' %}?status=want" class="px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap {% if status_filter == 'want' %}bg-white text-black{% else %}bg-dark-card text-dark-secondary border border-dark-border hover:bg-dark-hover{% endif %} transition">想看</a>
+        <a href="{% url 'plans:movie_list' %}?status=watching" class="px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap {% if status_filter == 'watching' %}bg-white text-black{% else %}bg-dark-card text-dark-secondary border border-dark-border hover:bg-dark-hover{% endif %} transition">在看</a>
+        <a href="{% url 'plans:movie_list' %}?status=done" class="px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap {% if status_filter == 'done' %}bg-white text-black{% else %}bg-dark-card text-dark-secondary border border-dark-border hover:bg-dark-hover{% endif %} transition">看完</a>
+    </div>
+
+    <div>
+        {% for movie in movies %}
+        <div class="border-b border-dark-border p-4 flex gap-3">
+            {% if movie.poster %}
+            <img src="{{ movie.poster.url }}" class="w-16 h-24 rounded-xl object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-16 h-24 rounded-xl bg-dark-card flex items-center justify-center text-2xl flex-shrink-0">
+                {% if movie.movie_type == 'movie' %}🎬{% elif movie.movie_type == 'tv' %}📺{% elif movie.movie_type == 'variety' %}🎭{% else %}🎌{% endif %}
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold">{{ movie.title }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs
+                        {% if movie.status == 'want' %}bg-blue-900/50 text-blue-400 border border-blue-800
+                        {% elif movie.status == 'watching' %}bg-yellow-900/50 text-yellow-400 border border-yellow-800
+                        {% else %}bg-green-900/50 text-green-400 border border-green-800{% endif %}">
+                        {{ movie.get_status_display }}
+                    </span>
+                </div>
+                <p class="text-dark-secondary text-sm">{{ movie.get_movie_type_display }}</p>
+                {% if movie.description %}
+                <p class="text-dark-secondary text-sm mt-1 line-clamp-2">{{ movie.description }}</p>
+                {% endif %}
+                {% if movie.rating %}
+                <p class="text-yellow-500 text-sm mt-1">{{ movie.get_rating_display }}</p>
+                {% endif %}
+                {% if movie.review %}
+                <p class="text-dark-secondary text-sm mt-1 italic">"{{ movie.review }}"</p>
+                {% endif %}
+                {% if movie.status != 'done' %}
+                <form method="post" action="{% url 'plans:movie_update_status' movie.id %}" class="mt-3 flex gap-2 items-center">
+                    {% csrf_token %}
+                    {% if movie.status == 'want' %}
+                    <input type="hidden" name="status" value="watching">
+                    <button type="submit" class="px-3 py-1 bg-yellow-500 text-black rounded-full text-xs font-bold hover:bg-yellow-400 transition">开始看</button>
+                    {% elif movie.status == 'watching' %}
+                    <input type="hidden" name="status" value="done">
+                    <input type="number" name="rating" min="1" max="5" placeholder="评分" class="w-16 bg-dark-card px-2 py-1 rounded border border-dark-border text-xs outline-none">
+                    <input type="text" name="review" placeholder="评价" class="flex-1 bg-dark-card px-2 py-1 rounded border border-dark-border text-xs outline-none">
+                    <button type="submit" class="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold hover:bg-green-400 transition">看完</button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-12 text-center text-dark-secondary">
+            <p class="text-4xl mb-3">🎬</p>
+            <p>还没有想看的剧</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
