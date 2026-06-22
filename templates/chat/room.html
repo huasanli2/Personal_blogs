@@ -97,7 +97,9 @@
         if (readQueue.size === 0) return;
         const ids = Array.from(readQueue);
         readQueue.clear();
-        chatSocket.send(JSON.stringify({ type: 'mark_read', ids: ids }));
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({ type: 'mark_read', ids: ids }));
+        }
         if (window.ChatUnread) {
             window.ChatUnread.updateBadge(Math.max(0, parseInt(document.getElementById('unread-count').textContent || '0') - ids.length));
         }
