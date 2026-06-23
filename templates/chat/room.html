@@ -199,8 +199,8 @@
     let pendingMessages = [];
     let heartbeatTimer = null;
     let heartbeatTimeout = null;
-    const HEARTBEAT_INTERVAL = 30000;
-    const HEARTBEAT_TIMEOUT = 5000;
+    const HEARTBEAT_INTERVAL = 20000;
+    const HEARTBEAT_TIMEOUT = 15000;
 
     const wsStatus = document.getElementById('ws-status');
     const wsStatusText = document.getElementById('ws-status-text');
@@ -335,11 +335,23 @@
         if (!pendingFile) return;
         const formData = new FormData();
         formData.append('image', pendingFile);
-        formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+        const token = getCookie('csrftoken');
+        formData.append('csrfmiddlewaretoken', token);
         try {
-            const resp = await fetch('{% url "chat:upload" %}', { method: 'POST', body: formData });
-            if (resp.ok) hidePreview();
-        } catch (err) { console.error('Upload failed:', err); }
+            const resp = await fetch('{% url "chat:upload" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': token },
+            });
+            if (resp.ok) {
+                hidePreview();
+            } else {
+                showToast('图片上传失败', 'error');
+            }
+        } catch (err) {
+            console.error('Upload failed:', err);
+            showToast('图片上传失败', 'error');
+        }
     }
 
     function sendEmoji(emoji) {
