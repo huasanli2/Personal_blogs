@@ -11,9 +11,14 @@ from .models import Post, PostImage, Comment, Like
 def home(request):
     posts = Post.objects.select_related('author').prefetch_related('images', 'comments__author', 'likes')
     if request.headers.get('HX-Request'):
-        page = int(request.GET.get('page', 1))
+        try:
+            page = int(request.GET.get('page', 1))
+        except (TypeError, ValueError):
+            page = 1
         paginator = Paginator(posts, 10)
-        page_obj = paginator.get_page(page)
+        if page < 1 or page > paginator.num_pages:
+            return HttpResponse('')
+        page_obj = paginator.page(page)
         html = ''
         for post in page_obj:
             html += render_to_string('moments/partials/post_card.html', {'post': post, 'user': request.user})
